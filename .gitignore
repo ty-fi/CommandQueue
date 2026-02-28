@@ -1,0 +1,13 @@
+# Runtime data
+CommandQueue.json
+*.lock
+
+# Test artifacts
+Tests/TestQueue.json
+
+# Claude Code
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+*-Session-Context.md
+*-Guide.md
