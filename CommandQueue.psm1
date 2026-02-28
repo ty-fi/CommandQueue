@@ -54,7 +54,7 @@ function Schedule-Command {
     )
 
     if (!(Test-Path $Script:QueueFile)) {
-        "[]" | Out-File $Script:QueueFile -Encoding utf8
+        '{"jobs":[]}' | Out-File $Script:QueueFile -Encoding utf8
     }
 
     $RunTime = Convert-NaturalLanguageToDateTime $Time
@@ -63,10 +63,10 @@ function Schedule-Command {
         throw "Time must be in the future."
     }
 
-    $queue = $Script:QueueFile | ConvertFrom-Json
+    $queue = Get-Content $Script:QueueFile -Raw | ConvertFrom-Json
 
     if ($queue -eq $null) {
-        $queue = @()
+        $queue = [PSCustomObject]@{ jobs = @() }
     }
 
     $job = [PSCustomObject]@{
@@ -78,7 +78,7 @@ function Schedule-Command {
         RunTime = $RunTime
     }
 
-    $queue.jobs += @($job)
+    $queue.jobs = @($queue.jobs) + @($job)
 
     $queue | ConvertTo-Json -Depth 5 |
         Out-File $Script:QueueFile -Encoding utf8
@@ -103,10 +103,10 @@ function Get-CommandQueue {
         return
     }
 
-    $queue = $Script:QueueFile |
+    $queue = Get-Content $Script:QueueFile -Raw |
         ConvertFrom-Json
 
-    if (!$queue) {
+    if (!$queue -or !$queue.jobs) {
         Write-Host "Queue empty."
         return
     }
@@ -138,7 +138,7 @@ function Remove-CommandQueue {
 
     if ($All) {
 
-        "[]" | Out-File $Script:QueueFile
+        '{"jobs":[]}' | Out-File $Script:QueueFile -Encoding utf8
 
         Write-Host "All jobs removed."
         return
@@ -148,13 +148,13 @@ function Remove-CommandQueue {
         throw "Specify -Id or -All"
     }
 
-    $queue = $Script:QueueFile |
+    $queue = Get-Content $Script:QueueFile -Raw |
         ConvertFrom-Json
 
-    $queue.jobs = $queue.jobs | Where-Object Id -ne $Id
+    $queue.jobs = @($queue.jobs | Where-Object Id -ne $Id)
 
-    $queue | ConvertTo-Json |
-        Out-File $Script:QueueFile
+    $queue | ConvertTo-Json -Depth 5 |
+        Out-File $Script:QueueFile -Encoding utf8
 
     Write-Host "Job removed."
 }
