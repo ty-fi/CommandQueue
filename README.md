@@ -16,6 +16,40 @@ The queue is stored as a local JSON file. The scheduled task runs as SYSTEM so i
 - Windows Task Scheduler (built into Windows)
 - Administrator rights (installation only)
 
+## Authorization
+
+Windows restricts script execution by default. Two things may need to be addressed before the module works.
+
+**1. Execution policy**
+
+Check your current policy:
+
+```powershell
+Get-ExecutionPolicy -Scope CurrentUser
+```
+
+If it returns `Restricted` or `Undefined`, allow local scripts to run:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+`RemoteSigned` lets you run local scripts freely while still requiring scripts downloaded from the internet to be signed. No Administrator rights needed for the `CurrentUser` scope.
+
+**2. Unblock files cloned from GitHub**
+
+When Git clones files from the internet, Windows marks them as untrusted. Unblock them before importing:
+
+```powershell
+Get-ChildItem -Path C:\Scripts\CommandQueue -Recurse | Unblock-File
+```
+
+You can verify a file is unblocked by checking that this returns nothing:
+
+```powershell
+Get-Item C:\Scripts\CommandQueue\CommandQueue.psm1 -Stream Zone.Identifier -ErrorAction SilentlyContinue
+```
+
 ## Installation
 
 **1. Register the scheduled task** (run once as Administrator):
