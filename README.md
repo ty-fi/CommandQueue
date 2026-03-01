@@ -4,7 +4,7 @@ A lightweight PowerShell command scheduler built on Windows Task Scheduler. Queu
 
 ## How it works
 
-1. You add commands to the queue with `Schedule-Command`
+1. You add commands to the queue with `Register-ScheduledCommand`
 2. A Windows Scheduled Task runs `Process-Queue.ps1` every 5 minutes
 3. When a command's scheduled time arrives, it executes in a new PowerShell window and is removed from the queue
 
@@ -71,12 +71,12 @@ Import-Module C:\Scripts\CommandQueue\CommandQueue.psm1
 ### Schedule a command
 
 ```powershell
-Schedule-Command -Command "shutdown /r /t 0" -Time "in 2 hours"
-Schedule-Command -Command "Write-Host 'Stand up'" -Time "today at 3:00 PM"
-Schedule-Command -Command "notepad.exe C:\notes.txt" -Time "tomorrow at 9:00 AM"
+Register-ScheduledCommand -Command "shutdown /r /t 0" -Time "in 2 hours"
+Register-ScheduledCommand -Command "Write-Host 'Stand up'" -Time "today at 3:00 PM"
+Register-ScheduledCommand -Command "notepad.exe C:\notes.txt" -Time "tomorrow at 9:00 AM"
 
 # Short aliases
-Schedule-Command -c "explorer.exe" -t "in 30 minutes"
+Register-ScheduledCommand -c "explorer.exe" -t "in 30 minutes"
 ```
 
 **Supported time formats:**
@@ -94,7 +94,7 @@ Schedule-Command -c "explorer.exe" -t "in 30 minutes"
 ### View the queue
 
 ```powershell
-Get-CommandQueue
+Get-ScheduledCommand
 ```
 
 ```
@@ -108,10 +108,10 @@ Id                                   RunTime              MinutesRemaining Comma
 
 ```powershell
 # Remove a specific job by its Id
-Remove-CommandQueue -Id 3f2a1b4c-...
+Remove-ScheduledCommand -Id 3f2a1b4c-...
 
 # Clear all jobs
-Remove-CommandQueue -All
+Remove-ScheduledCommand -All
 ```
 
 ## Uninstall
@@ -137,7 +137,7 @@ Invoke-Pester .\Tests\CommandQueue.Tests.ps1
 
 | File | Purpose |
 |---|---|
-| `CommandQueue.psm1` | Module — exports `Schedule-Command`, `Get-CommandQueue`, `Remove-CommandQueue` |
+| `CommandQueue.psm1` | Module — exports `Register-ScheduledCommand`, `Get-ScheduledCommand`, `Remove-ScheduledCommand` |
 | `Install-CommandQueue.ps1` | Registers the Windows Scheduled Task (run as Admin) |
 | `Process-Queue.ps1` | Processes due jobs; called by Task Scheduler every 5 minutes |
 | `Uninstall-CommandQueue.ps1` | Removes the scheduled task |

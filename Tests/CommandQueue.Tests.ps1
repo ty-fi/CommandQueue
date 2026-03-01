@@ -16,7 +16,7 @@ $TestQueueFile    = $env:CQ_TEST_FILE
 
 # Load (or reload) the module
 if (Get-Module CommandQueue) { Remove-Module CommandQueue -Force }
-Import-Module $ModulePath -DisableNameChecking
+Import-Module $ModulePath
 
 # Redirect the module to the test queue file so production queue is untouched
 InModuleScope CommandQueue { $Script:QueueFile = $env:CQ_TEST_FILE }
@@ -79,13 +79,13 @@ Describe "Convert-NaturalLanguageToDateTime" {
 }
 
 # ---------------------------------------------------------------
-Describe "Schedule-Command" {
+Describe "Register-ScheduledCommand" {
 
     BeforeEach { Reset-TestQueue }
     AfterEach  { if (Test-Path $env:CQ_TEST_FILE) { Remove-Item $env:CQ_TEST_FILE -Force } }
 
     It "Adds a job to an empty queue" {
-        Schedule-Command -Command "Write-Host Hello" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Hello" -Time "in 5 minutes"
 
         $q = Get-TestQueue
         $q.jobs.Count      | Should Be 1
@@ -93,85 +93,85 @@ Describe "Schedule-Command" {
     }
 
     It "Adds a second job and queue grows to 2" {
-        Schedule-Command -Command "Write-Host First"  -Time "in 5 minutes"
-        Schedule-Command -Command "Write-Host Second" -Time "in 10 minutes"
+        Register-ScheduledCommand -Command "Write-Host First"  -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Second" -Time "in 10 minutes"
 
         $q = Get-TestQueue
         $q.jobs.Count | Should Be 2
     }
 
     It "Adds three jobs and queue grows to 3" {
-        Schedule-Command -Command "Write-Host A" -Time "in 5 minutes"
-        Schedule-Command -Command "Write-Host B" -Time "in 10 minutes"
-        Schedule-Command -Command "Write-Host C" -Time "in 15 minutes"
+        Register-ScheduledCommand -Command "Write-Host A" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host B" -Time "in 10 minutes"
+        Register-ScheduledCommand -Command "Write-Host C" -Time "in 15 minutes"
 
         $q = Get-TestQueue
         $q.jobs.Count | Should Be 3
     }
 
     It "Each job gets a unique GUID Id" {
-        Schedule-Command -Command "Write-Host A" -Time "in 5 minutes"
-        Schedule-Command -Command "Write-Host B" -Time "in 10 minutes"
+        Register-ScheduledCommand -Command "Write-Host A" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host B" -Time "in 10 minutes"
 
         $q = Get-TestQueue
         $q.jobs[0].Id | Should Not Be $q.jobs[1].Id
     }
 
     It "Rejects a time in the past" {
-        { Schedule-Command -Command "Write-Host Past" -Time "2020-01-01" } | Should Throw
+        { Register-ScheduledCommand -Command "Write-Host Past" -Time "2020-01-01" } | Should Throw
     }
 }
 
 # ---------------------------------------------------------------
-Describe "Get-CommandQueue" {
+Describe "Get-ScheduledCommand" {
 
     BeforeEach { Reset-TestQueue }
     AfterEach  { if (Test-Path $env:CQ_TEST_FILE) { Remove-Item $env:CQ_TEST_FILE -Force } }
 
     It "Does not throw when queue is empty" {
-        { Get-CommandQueue } | Should Not Throw
+        { Get-ScheduledCommand } | Should Not Throw
     }
 
     It "Lists a scheduled job with correct fields" {
-        Schedule-Command -Command "Write-Host Listed" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Listed" -Time "in 5 minutes"
 
-        $result = Get-CommandQueue
+        $result = Get-ScheduledCommand
         $result                     | Should Not BeNullOrEmpty
         $result[0].Command          | Should Be "Write-Host Listed"
         $result[0].MinutesRemaining | Should BeGreaterThan 0
     }
 
     It "Returns jobs sorted by RunTime ascending" {
-        Schedule-Command -Command "Write-Host Late"  -Time "in 30 minutes"
-        Schedule-Command -Command "Write-Host Early" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Late"  -Time "in 30 minutes"
+        Register-ScheduledCommand -Command "Write-Host Early" -Time "in 5 minutes"
 
-        $result = Get-CommandQueue
+        $result = Get-ScheduledCommand
         $result[0].Command | Should Be "Write-Host Early"
         $result[1].Command | Should Be "Write-Host Late"
     }
 }
 
 # ---------------------------------------------------------------
-Describe "Remove-CommandQueue" {
+Describe "Remove-ScheduledCommand" {
 
     BeforeEach { Reset-TestQueue }
     AfterEach  { if (Test-Path $env:CQ_TEST_FILE) { Remove-Item $env:CQ_TEST_FILE -Force } }
 
     It "Removes a job by Id" {
-        Schedule-Command -Command "Write-Host Delete Me" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Delete Me" -Time "in 5 minutes"
         $id = (Get-TestQueue).jobs[0].Id
 
-        Remove-CommandQueue -Id $id
+        Remove-ScheduledCommand -Id $id
 
         (Get-TestQueue).jobs.Count | Should Be 0
     }
 
     It "Leaves other jobs intact when removing by Id" {
-        Schedule-Command -Command "Write-Host Keep"   -Time "in 5 minutes"
-        Schedule-Command -Command "Write-Host Remove" -Time "in 10 minutes"
+        Register-ScheduledCommand -Command "Write-Host Keep"   -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Remove" -Time "in 10 minutes"
 
         $removeId = ((Get-TestQueue).jobs | Where-Object Command -eq "Write-Host Remove").Id
-        Remove-CommandQueue -Id $removeId
+        Remove-ScheduledCommand -Id $removeId
 
         $q = Get-TestQueue
         $q.jobs.Count      | Should Be 1
@@ -179,16 +179,16 @@ Describe "Remove-CommandQueue" {
     }
 
     It "Removes all jobs with -All" {
-        Schedule-Command -Command "Write-Host A" -Time "in 5 minutes"
-        Schedule-Command -Command "Write-Host B" -Time "in 10 minutes"
+        Register-ScheduledCommand -Command "Write-Host A" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host B" -Time "in 10 minutes"
 
-        Remove-CommandQueue -All
+        Remove-ScheduledCommand -All
 
         (Get-TestQueue).jobs.Count | Should Be 0
     }
 
     It "Queue file retains jobs structure after -All" {
-        Remove-CommandQueue -All
+        Remove-ScheduledCommand -All
 
         $q = Get-TestQueue
         # In Pester 3.4 'Should Contain' checks file contents; use -contains for arrays
@@ -222,7 +222,7 @@ Describe "Process-Queue" {
     }
 
     It "Keeps a future job in the queue" {
-        Schedule-Command -Command "Write-Host Future" -Time "in 30 minutes"
+        Register-ScheduledCommand -Command "Write-Host Future" -Time "in 30 minutes"
 
         & $ProcessScript -QueueFile $env:CQ_TEST_FILE
 
@@ -241,7 +241,7 @@ Describe "Process-Queue" {
             ConvertTo-Json -Depth 5 |
             Out-File $env:CQ_TEST_FILE -Encoding utf8
 
-        Schedule-Command -Command "Write-Host Future" -Time "in 30 minutes"
+        Register-ScheduledCommand -Command "Write-Host Future" -Time "in 30 minutes"
 
         & $ProcessScript -QueueFile $env:CQ_TEST_FILE
 
@@ -251,7 +251,7 @@ Describe "Process-Queue" {
     }
 
     It "Queue file has correct jobs structure after processing" {
-        Schedule-Command -Command "Write-Host Struct" -Time "in 5 minutes"
+        Register-ScheduledCommand -Command "Write-Host Struct" -Time "in 5 minutes"
 
         & $ProcessScript -QueueFile $env:CQ_TEST_FILE
 

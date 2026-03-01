@@ -40,7 +40,7 @@ function Convert-NaturalLanguageToDateTime {
     throw "Could not parse time string."
 }
 
-function Schedule-Command {
+function Register-ScheduledCommand {
 
     [CmdletBinding()]
     param(
@@ -84,14 +84,14 @@ function Schedule-Command {
         Out-File $Script:QueueFile -Encoding utf8
 
     Write-Host ""
-    Write-Host "Scheduled:"
+    Write-Host "Registered:"
     Write-Host $Command
     Write-Host "At:"
     Write-Host $RunTime
     Write-Host ""
 }
 
-function Get-CommandQueue {
+function Get-ScheduledCommand {
 
     [CmdletBinding()]
     param(
@@ -123,7 +123,7 @@ function Get-CommandQueue {
         Command
 }
 
-function Remove-CommandQueue {
+function Remove-ScheduledCommand {
 
     [CmdletBinding()]
     param(
@@ -160,6 +160,6 @@ function Remove-CommandQueue {
 }
 
 Export-ModuleMember `
-    -Function Schedule-Command,
-              Get-CommandQueue,
-              Remove-CommandQueue
+    -Function Register-ScheduledCommand,
+              Get-ScheduledCommand,
+              Remove-ScheduledCommand
